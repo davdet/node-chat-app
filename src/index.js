@@ -53,6 +53,11 @@ io.on('connection', (socket) => {
         socket.emit('message', generateMessage(`ADMIN@${user.room}`, `Welcome to ${user.room}`))
         //Avvisa i client già connessi che un nuovo client si è connesso
         socket.broadcast.to(user.room).emit('message', generateMessage(`ADMIN@${user.room}`, `${user.username} has joined.`))
+        //Invia ai client i dati necessari per aggiornare la lista degli utenti in una room quando si connette un nuovo utente
+        io.to(user.room).emit('roomData', {
+            room: user.room,
+            users: getUsersInRoom(user.room)
+        })
 
         callback()
     })
@@ -86,6 +91,11 @@ io.on('connection', (socket) => {
 
         if (user) {
             io.to(user.room).emit('message', generateMessage(`ADMIN@${user.room}`, `${user.username} has left.`))
+            //Invia ai client i dati necessari per aggiornare la lista degli utenti in una room quando un utente lascia la room
+            io.to(user.room).emit('roomData', {
+                room: user.room,
+                users: getUsersInRoom(user.room)
+            })
         }
     })
 })

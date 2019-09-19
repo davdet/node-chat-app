@@ -12,9 +12,37 @@ const $messages = document.querySelector('#messages')
 //Shortcut template
 const messageTemplate = document.querySelector('#message-template').innerHTML
 const locationMessageTemplate = document.querySelector('#location-message-template').innerHTML
+const sidebarTemplate = document.querySelector('#sidebar-template').innerHTML
 
 //Parsing e destrutturazione della query string
 const { username, room } =  Qs.parse(location.search, { ignoreQueryPrefix: true })
+
+const autoscroll = () => {
+    //Elemento del nuovo messaggio
+    const $newMessage = $messages.lastElementChild
+
+    //Recupera lo stile del nuovo messaggio
+    const newMessageStyles = getComputedStyle($newMessage)
+    //Estrae il margine del nuovo messaggio dallo stile
+    const newMessageMargin = parseInt(newMessageStyles.marginBottom)
+    //Calcola l'altezza effettiva del nuovo messaggio (altezza contenuto + margine)
+    const newMessageHeight = $newMessage.offsetHeight + newMessageMargin
+
+    //Recupera l'altezza visibile del blocco dei messaggi
+    const visibleHeight = $messages.offsetHeight
+
+    //Recupera l'altezza totale del container dei messaggi 
+    const containerHeight = $messages.scrollHeight
+
+    //Quanto dista la barra di scroll dal bottom? (distanza della barra di scroll dal top della pagina + altezza visibile blocco messaggi)
+    const scrollOffset = $messages.scrollTop + visibleHeight
+
+    //Se l'altezza totale del container dei messaggi meno l'altezza effettiva del nuovo messaggio è minore o uguale alla distanza della barra di scroll dal bottom
+    if (containerHeight - newMessageHeight <= scrollOffset) {
+        //Esegue l'autoscroll
+        $messages.scrollTop = $messages.scrollHeight
+    }
+}
 
 //Controlla l'evento 'message' per ricevere i messaggi in arrivo dal server
 socket.on('message', (message) => {
@@ -28,6 +56,7 @@ socket.on('message', (message) => {
     })
     //Inserisce il template dinamicamente nell'elemento HTML #messages
     $messages.insertAdjacentHTML('beforeend', html)
+    autoscroll()
 })
 
 //Controlla l'evento 'locationMessage' per ricevere le posizioni in arrivo dal server
@@ -42,9 +71,21 @@ socket.on('locationMessage', (message) => {
     })
     //Inserisce il template dinamicamente nell'elemento HTML #messages
     $messages.insertAdjacentHTML('beforeend', html)
+    autoscroll()
 })
 
-//Targhettizza il form per l'incio di un messaggio e crea l'evento 'submit'
+//Controlla l'evento 'roomData' per aggiornare la lista degli utenti in una room
+socket.on('roomData', ({ room, users }) => {
+    console.log(room)
+    console.log(users)
+    const html = Mustache.render(sidebarTemplate, {
+        room,
+        users,
+    })
+    document.querySelector('#sidebar').innerHTML = html
+})
+
+//Targhettizza il form per l'invio di un messaggio e crea l'evento 'submit'
 $messageForm.addEventListener('submit', (e) => {
     //Previene il refresh automatico della pagina HTML
     e.preventDefault()
